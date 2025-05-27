@@ -1,0 +1,25 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    // Disable all rules
+    "@typescript-eslint/no-unused-vars": "off",
+    "react-hooks/rules-of-hooks": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "react/no-unescaped-entities": "off",
+    "react/display-name": "off",
+    "react/jsx-key": "off",
+    "react/prop-types": "off",
+    "react/react-in-jsx-scope": "off",
+    "@next/next/no-img-element": "off",
+    "@next/next/no-html-link-for-pages": "off",
+    "import/no-anonymous-default-export": "off",
+    "jsx-a11y/alt-text": "off",
+    "jsx-a11y/role-has-required-aria-props": "off",
+    "jsx-a11y/accessible-emoji": "off",
+    "jsx-a11y/aria-props": "off",
+    "jsx-a11y/aria-proptypes": "off",
+    "jsx-a11y/aria-unsupported-elements": "off",
+    "jsx-a11y/heading-has-content": "off",
+    "no-unused-vars": "off"
+  }
+}

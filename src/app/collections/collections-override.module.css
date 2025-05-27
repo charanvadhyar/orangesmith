@@ -1,0 +1,189 @@
+/* Module-specific overrides that will be scoped to this component */
+.noTransitions * {
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Ensure button hover states have no transitions */
+.button {
+  transition: none !important;
+}
+
+.button:hover {
+  transition: none !important;
+}
+
+/* Target specific Tailwind classes */
+.buttonBlack {
+  background-color: #111;
+  color: white;
+  transition: none !important;
+}
+
+.buttonBlack:hover {
+  background-color: #000;
+  transition: none !important;
+}
+
+.buttonOrange {
+  background-color: #ff6b00;
+  color: white;
+  transition: none !important;
+}
+
+.buttonOrange:hover {
+  background-color: #e65c00;
+  transition: none !important;
+}
+
+/* Filter Modal Styles */
+.filterModal {
+  position: fixed;
+  top: 0;
+  right: -400px; /* Start offscreen */
+  width: 400px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  z-index: 1000;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.filterModalOpen {
+  right: 0; /* Slide in */
+}
+
+.filterOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+.filterOverlayVisible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filterButton {
+  background-color: #000;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.filterSection {
+  margin-bottom: 25px;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.filterHeader h2 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+/* Vertical filter styles */
+.filterGroup {
+  margin-bottom: 20px;
+}
+
+.filterGroup h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.filterGroup h3:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 2px;
+  background-color: #ff6b00;
+}
+
+.filterOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filterCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterCheckbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ff6b00;
+}
+
+.priceRange {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.priceInputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.priceInputs input {
+  width: 100px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.applyButton {
+  background-color: #ff6b00;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 30px;
+  width: 100%;
+}

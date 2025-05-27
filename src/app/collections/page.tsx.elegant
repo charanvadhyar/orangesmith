@@ -1,0 +1,590 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { client } from '@/sanity/client'
+import { urlForImage } from '@/sanity/client'
+
+// Types for products and collections
+interface Product {
+  _id: string
+  name: string
+  slug: {
+    current: string
+  }
+  images: any[]
+  price: number
+  comparePrice?: number
+  categories?: any[]
+  collections?: any[]
+  materials?: any[]
+  gemstones?: any[]
+  isNew?: boolean
+  isBestseller?: boolean
+}
+
+interface Collection {
+  _id: string
+  title: string
+  slug: {
+    current: string
+  }
+}
+
+interface Category {
+  _id: string
+  name: string
+  slug: {
+    current: string
+  }
+}
+
+interface Material {
+  _id: string
+  name: string
+  slug: {
+    current: string
+  }
+}
+
+interface Gemstone {
+  _id: string
+  name: string
+  slug: {
+    current: string
+  }
+}
+
+// Filter and sorting options
+const sortOptions = [
+  { name: 'Newest', value: 'newest' },
+  { name: 'Price: Low to High', value: 'price-asc' },
+  { name: 'Price: High to Low', value: 'price-desc' },
+  { name: 'Name: A-Z', value: 'name-asc' },
+]
+
+export default function CollectionsPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [gemstones, setGemstones] = useState<Gemstone[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [activeCollection, setActiveCollection] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeMaterial, setActiveMaterial] = useState<string | null>(null)
+  const [activeGemstone, setActiveGemstone] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState('newest')
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
+  const [priceMin, setPriceMin] = useState<number>(0)
+  const [priceMax, setPriceMax] = useState<number>(10000)
+
+  // Fetch products and filtering options
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Fetch all collections
+        const collectionsData = await client.fetch(`
+          *[_type == "collection"] {
+            _id,
+            title,
+            slug
+          }
+        `)
+        
+        // Fetch all categories
+        const categoriesData = await client.fetch(`
+          *[_type == "jewelryCategory"] {
+            _id,
+            name,
+            slug
+          }
+        `)
+
+        // Fetch all materials (metals like gold, silver, etc.)
+        const materialsData = await client.fetch(`
+          *[_type == "material"] {
+            _id,
+            name,
+            slug
+          }
+        `)
+        
+        // Fetch all gemstones (diamonds, sapphires, etc.)
+        const gemstonesData = await client.fetch(`
+          *[_type == "gemstone"] {
+            _id,
+            name,
+            slug
+          }
+        `)
+        
+        // Build query for products with filters
+        let productsQuery = `*[_type == "product"`
+        
+        // Apply collection filter if selected
+        if (activeCollection) {
+          productsQuery += ` && references("${activeCollection}")`
+        }
+        
+        // Apply category filter if selected
+        if (activeCategory) {
+          productsQuery += ` && references("${activeCategory}")`
+        }
+        
+        // Apply material filter if selected
+        if (activeMaterial) {
+          productsQuery += ` && references("${activeMaterial}")`
+        }
+        
+        // Apply gemstone filter if selected
+        if (activeGemstone) {
+          productsQuery += ` && references("${activeGemstone}")`
+        }
+        
+        // Close the query and select fields
+        productsQuery += `] {
+          _id,
+          name,
+          slug,
+          images,
+          price,
+          comparePrice,
+          categories[]->{_id, name, slug},
+          collections[]->{_id, title, slug},
+          materials[]->{_id, name, slug},
+          gemstones[]->{_id, name, slug},
+          isNew,
+          isBestseller
+        }`
+        
+        let fetchedProducts = await client.fetch(productsQuery)
+        
+        // Apply price range filter
+        fetchedProducts = fetchedProducts.filter((product: Product) => 
+          product.price >= priceRange[0] && product.price <= priceRange[1]
+        )
+        
+        // Apply sorting
+        switch (sortBy) {
+          case 'price-asc':
+            fetchedProducts = fetchedProducts.sort((a: Product, b: Product) => a.price - b.price)
+            break
+          case 'price-desc':
+            fetchedProducts = fetchedProducts.sort((a: Product, b: Product) => b.price - a.price)
+            break
+          case 'name-asc':
+            fetchedProducts = fetchedProducts.sort((a: Product, b: Product) => 
+              a.name.localeCompare(b.name))
+            break
+          case 'newest':
+          default:
+            // Newest is default from Sanity
+            break
+        }
+        
+        setCollections(collectionsData)
+        setCategories(categoriesData)
+        setMaterials(materialsData)
+        setGemstones(gemstonesData)
+        setProducts(fetchedProducts)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [activeCollection, activeCategory, activeMaterial, activeGemstone, priceRange, sortBy])
+
+  // For display
+  const displayProducts = products
+
+  return (
+    <div className="min-h-screen">
+      {/* Page Header */}
+      <div className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-display font-medium text-jetBlack mb-2">
+            Our Collections
+          </h1>
+          <p className="text-lg text-slateGray max-w-2xl mx-auto">
+            Discover our exclusive jewelry collections, crafted with precision and passion for those who appreciate timeless elegance.
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8 lg:py-16">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <div className="mb-4 md:mb-0">
+            <h2 className="text-xl font-medium text-jetBlack">Fine Jewelry Collections</h2>
+            <p className="text-slateGray text-sm">
+              {isLoading 
+                ? 'Loading products...' 
+                : `Showing ${displayProducts.length} ${displayProducts.length === 1 ? 'product' : 'products'}`
+              }
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap gap-3 items-center">
+            {/* Collection Filter */}
+            <div className="relative w-40">
+              <select
+                value={activeCollection || ''}
+                onChange={(e) => setActiveCollection(e.target.value || null)}
+                className="appearance-none w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+              >
+                <option value="">All Collections</option>
+                {collections.map((collection) => (
+                  <option key={collection._id} value={collection._id}>
+                    {collection.title}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Category Filter */}
+            <div className="relative w-40">
+              <select
+                value={activeCategory || ''}
+                onChange={(e) => setActiveCategory(e.target.value || null)}
+                className="appearance-none w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Sort By */}
+            <div className="relative w-40">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+              >
+                {sortOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-200 pt-6 mb-8">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-jetBlack hover:text-vividOrange transition-colors">
+              <span>Advanced Filters</span>
+              <span className="transition group-open:rotate-180">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </summary>
+            
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Material Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                <div className="relative">
+                  <select
+                    value={activeMaterial || ''}
+                    onChange={(e) => setActiveMaterial(e.target.value || null)}
+                    className="appearance-none w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+                  >
+                    <option value="">All Materials</option>
+                    {materials.map((material) => (
+                      <option key={material._id} value={material._id}>
+                        {material.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                    <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Gemstone Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gemstone</label>
+                <div className="relative">
+                  <select
+                    value={activeGemstone || ''}
+                    onChange={(e) => setActiveGemstone(e.target.value || null)}
+                    className="appearance-none w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+                  >
+                    <option value="">All Gemstones</option>
+                    {gemstones.map((gemstone) => (
+                      <option key={gemstone._id} value={gemstone._id}>
+                        {gemstone.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                    <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Price Range */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(Number(e.target.value))}
+                    className="w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+                    placeholder="Min"
+                  />
+                  <span className="text-gray-500">—</span>
+                  <input
+                    type="number"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(Number(e.target.value))}
+                    className="w-full border border-gray-300 py-2 px-3 rounded-sm focus:outline-none focus:ring-1 focus:ring-vividOrange"
+                    placeholder="Max"
+                  />
+                  <button
+                    onClick={() => setPriceRange([priceMin, priceMax])}
+                    className="bg-jetBlack text-white py-2 px-4 rounded-sm hover:bg-opacity-90 transition-colors"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Clear Filters */}
+            {(activeCollection || activeCategory || activeMaterial || activeGemstone || priceRange[0] > 0 || priceRange[1] < 10000) && (
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => {
+                    setActiveCollection(null);
+                    setActiveCategory(null);
+                    setActiveMaterial(null);
+                    setActiveGemstone(null);
+                    setPriceRange([0, 10000]);
+                    setPriceMin(0);
+                    setPriceMax(10000);
+                    setSortBy('newest');
+                  }}
+                  className="text-vividOrange hover:text-jetBlack transition-colors flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+          </details>
+        </div>
+        
+        {/* Active Filters */}
+        {(activeCollection || activeCategory || activeMaterial || activeGemstone || priceRange[0] > 0 || priceRange[1] < 10000) && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <span className="text-sm text-slateGray">Active Filters:</span>
+            
+            {activeCollection && collections.find(c => c._id === activeCollection) && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
+                <span>Collection: {collections.find(c => c._id === activeCollection)?.title}</span>
+                <button 
+                  onClick={() => setActiveCollection(null)}
+                  className="rounded-full w-4 h-4 flex items-center justify-center bg-gray-300 hover:bg-vividOrange hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {activeCategory && categories.find(c => c._id === activeCategory) && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
+                <span>Category: {categories.find(c => c._id === activeCategory)?.name}</span>
+                <button 
+                  onClick={() => setActiveCategory(null)}
+                  className="rounded-full w-4 h-4 flex items-center justify-center bg-gray-300 hover:bg-vividOrange hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {activeMaterial && materials.find(m => m._id === activeMaterial) && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
+                <span>Material: {materials.find(m => m._id === activeMaterial)?.name}</span>
+                <button 
+                  onClick={() => setActiveMaterial(null)}
+                  className="rounded-full w-4 h-4 flex items-center justify-center bg-gray-300 hover:bg-vividOrange hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {activeGemstone && gemstones.find(g => g._id === activeGemstone) && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
+                <span>Gemstone: {gemstones.find(g => g._id === activeGemstone)?.name}</span>
+                <button 
+                  onClick={() => setActiveGemstone(null)}
+                  className="rounded-full w-4 h-4 flex items-center justify-center bg-gray-300 hover:bg-vividOrange hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {(priceRange[0] > 0 || priceRange[1] < 10000) && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
+                <span>Price: ${priceRange[0]} - ${priceRange[1]}</span>
+                <button 
+                  onClick={() => {
+                    setPriceRange([0, 10000])
+                    setPriceMin(0)
+                    setPriceMax(10000)
+                  }}
+                  className="rounded-full w-4 h-4 flex items-center justify-center bg-gray-300 hover:bg-vividOrange hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Products */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {displayProducts.map((product) => (
+            <div key={product._id} className="group">
+              <Link href={`/products/${product.slug.current}`}>
+                <div className="aspect-square mb-3 relative overflow-hidden bg-gray-100">
+                  {/* Product badges */}
+                  <div className="absolute top-2 left-2 z-10 flex flex-col gap-2">
+                    {product.isNew && (
+                      <span className="bg-vividOrange text-white text-xs px-2 py-1 rounded">
+                        New
+                      </span>
+                    )}
+                    {product.isBestseller && (
+                      <span className="bg-jetBlack text-white text-xs px-2 py-1 rounded">
+                        Bestseller
+                      </span>
+                    )}
+                    {product.comparePrice && product.comparePrice > product.price && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded">
+                        Sale
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Product image */}
+                  {product.images && product.images.length > 0 ? (
+                    <Image 
+                      src={urlForImage(product.images[0]).width(600).height(600).url()}
+                      alt={product.name}
+                      fill
+                      className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-400">Image coming soon</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Product info */}
+                <div>
+                  <h3 className="text-lg font-medium text-jetBlack group-hover:text-vividOrange transition-colors">
+                    {product.name}
+                  </h3>
+                  <div className="mt-2 flex items-center">
+                    <p className="font-medium text-jetBlack">
+                      ${product.price?.toFixed(2)}
+                    </p>
+                    {product.comparePrice && product.comparePrice > product.price && (
+                      <p className="ml-2 text-sm text-gray-400 line-through">
+                        ${product.comparePrice.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+              
+              {/* Quick add to cart button */}
+              <button className="mt-3 w-full py-2 bg-white border border-jetBlack text-jetBlack rounded hover:bg-jetBlack hover:text-white transition-colors">
+                Quick View
+              </button>
+            </div>
+          ))}
+        </div>
+        
+        {/* Loading or empty state */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-vividOrange border-r-transparent"></div>
+            <p className="mt-4 text-slateGray">Loading luxurious pieces...</p>
+          </div>
+        ) : products.length === 0 && !isLoading ? (
+          <div className="text-center py-16">
+            <h3 className="text-xl font-medium text-jetBlack mb-2">No products found</h3>
+            <p className="text-slateGray mb-6">Try adjusting your filters or browse our other collections.</p>
+            <button 
+              onClick={() => {
+                setActiveCollection(null)
+                setActiveCategory(null)
+                setActiveMaterial(null)
+                setActiveGemstone(null)
+                setPriceRange([0, 10000])
+                setPriceMin(0)
+                setPriceMax(10000)
+                setSortBy('newest')
+              }}
+              className="px-6 py-2 bg-vividOrange text-white rounded hover:bg-opacity-90 transition-colors"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}

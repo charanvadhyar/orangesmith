@@ -1,0 +1,38 @@
+/* Disable all transitions and animations */
+* {
+  transition: none !important;
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  -ms-transition: none !important;
+  animation: none !important;
+  -webkit-animation: none !important;
+  -moz-animation: none !important;
+  -o-animation: none !important;
+  -ms-animation: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-timing-function: step-end !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  transition-timing-function: step-end !important;
+}
+
+/* Specifically target buttons and interactive elements */
+button, a, [role="button"], .group, *:hover {
+  transition: none !important;
+  animation: none !important;
+  transition-property: none !important;
+}
+
+/* Target Tailwind specific hover classes */
+.hover\:bg-jetBlack:hover,
+.hover\:bg-vividOrange:hover,
+.hover\:text-white:hover,
+.hover\:text-vividOrange:hover,
+.hover\:bg-opacity-90:hover,
+.hover\:border-vividOrange:hover,
+.hover\:shadow:hover,
+.group:hover * {
+  transition: none !important;
+}

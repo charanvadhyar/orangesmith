@@ -81,6 +81,21 @@ async function getHomepageData(): Promise<HomepageData | null> {
   try {
     // Using Sanity client to fetch homepage data with a cache-busting timestamp
     const timestamp = new Date().getTime();
+    
+    // First fetch categories and collections separately to ensure they're available
+    const allCategories = await client.fetch(`
+      *[_type == "category"] {
+        _id,
+        title,
+        slug,
+        description,
+        "image": image.asset->url
+      }
+    `);
+    
+    console.log('All available categories:', allCategories.length);
+    
+    // Then fetch homepage data
     const homepage = await client.fetch(`
       *[_type == "homepage"][0]{
         hero {
@@ -148,6 +163,16 @@ async function getHomepageData(): Promise<HomepageData | null> {
     `, { cache: 'no-store', next: { tags: [`homepage-${timestamp}`] } });
     
     console.log('Sanity homepage data fetched successfully:', !!homepage);
+    
+    // If there are no categories in the homepage or if they're empty, use the separately fetched categories
+    if (!homepage?.featuredCategories?.categories || homepage.featuredCategories.categories.length === 0) {
+      console.log('Using separately fetched categories because homepage categories are missing');
+      if (homepage && homepage.featuredCategories) {
+        homepage.featuredCategories.categories = allCategories;
+      }
+    } else {
+      console.log('Homepage already has categories:', homepage?.featuredCategories?.categories?.length);
+    }
     
     return homepage;
   } catch (error) {

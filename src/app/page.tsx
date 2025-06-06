@@ -306,7 +306,7 @@ export default async function Home() {
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300 z-10"></div>
                   {category.image ? (
                     <Image 
-                      src={urlForImage(category.image).url()}
+                      src={typeof category.image === 'string' ? category.image : urlForImage(category.image).url()}
                       alt={category.title}
                       width={400}
                       height={500}
@@ -368,9 +368,9 @@ export default async function Home() {
             {featuredCollection?.featuredProducts && Array.isArray(featuredCollection.featuredProducts) && featuredCollection.featuredProducts.length > 0 ? (
               featuredCollection.featuredProducts.map((product) => (
                 <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  {product.images?.[0] ? (
+                  {product.images && product.images.length > 0 ? (
                     <Image 
-                      src={urlForImage(product.images[0]).url()}
+                      src={typeof product.images[0] === 'string' ? product.images[0] : urlForImage(product.images[0]).url()}
                       alt={product.name}
                       width={400}
                       height={400}

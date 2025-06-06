@@ -82,9 +82,9 @@ async function getHomepageData(): Promise<HomepageData | null> {
     // Using Sanity client to fetch homepage data with a cache-busting timestamp
     const timestamp = new Date().getTime();
     
-    // First fetch categories and collections separately to ensure they're available
+    // First fetch jewelry categories separately to ensure they're available
     const allCategories = await client.fetch(`
-      *[_type == "category"] {
+      *[_type == "jewelryCategory"] {
         _id,
         title,
         slug,

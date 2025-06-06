@@ -79,45 +79,75 @@ type HomepageData = {
 // This function fetches data at request time (Server Component)
 async function getHomepageData(): Promise<HomepageData | null> {
   try {
-    // Using Sanity client to fetch homepage data
+    // Using Sanity client to fetch homepage data with a cache-busting timestamp
+    const timestamp = new Date().getTime();
     const homepage = await client.fetch(`
       *[_type == "homepage"][0]{
-        hero,
+        hero {
+          title,
+          description,
+          backgroundImage,
+          cta[] {
+            text,
+            link,
+            isMain
+          }
+        },
         featuredCategories {
-          ...,
+          title,
+          subtitle,
           categories[]-> {
             _id,
             title,
             slug,
-            image
+            description,
+            "image": image.asset->url
           }
         },
         featuredCollection {
-          ...,
-          collection->,
+          title,
+          subtitle,
+          collection-> {
+            _id,
+            title,
+            slug,
+            description,
+            "image": image.asset->url
+          },
           featuredProducts[]-> {
             _id,
             name,
             slug,
             price,
-            images
+            "images": images[].asset->url
           }
         },
         testimonials {
-          ...,
+          title,
+          subtitle,
           testimonialsList[]-> {
             _id,
             name,
             location,
             rating,
             quote,
-            image
+            "image": image.asset->url
           }
         },
-        newsletter,
-        values
+        newsletter {
+          title,
+          description,
+          buttonText
+        },
+        values[] {
+          title,
+          description,
+          icon
+        }
       }
-    `);
+    `, { cache: 'no-store', next: { tags: [`homepage-${timestamp}`] } });
+    
+    console.log('Sanity homepage data fetched successfully:', !!homepage);
     
     return homepage;
   } catch (error) {

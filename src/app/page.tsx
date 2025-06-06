@@ -164,17 +164,35 @@ async function getHomepageData(): Promise<HomepageData | null> {
     
     console.log('Sanity homepage data fetched successfully:', !!homepage);
     
-    // If there are no categories in the homepage or if they're empty, use the separately fetched categories
-    if (!homepage?.featuredCategories?.categories || homepage.featuredCategories.categories.length === 0) {
-      console.log('Using separately fetched categories because homepage categories are missing');
-      if (homepage && homepage.featuredCategories) {
-        homepage.featuredCategories.categories = allCategories;
+    // Always force use the standalone categories query for now to ensure we get all categories
+    // This bypasses any issues with references in the homepage document
+    const forceUseCategories = true;
+    
+    // Create a modified copy of the homepage data that we can safely modify
+    let processedHomepage = homepage ? { ...homepage } : {};
+    
+    if (forceUseCategories || !processedHomepage?.featuredCategories?.categories || processedHomepage.featuredCategories?.categories?.length === 0) {
+      console.log('Using separately fetched categories - Total found:', allCategories.length);
+      
+      // Create featuredCategories section if it doesn't exist
+      if (!processedHomepage.featuredCategories) {
+        processedHomepage.featuredCategories = {
+          title: 'Our Jewelry Categories',
+          subtitle: 'Explore our exquisite collection of fine jewelry pieces'
+        };
       }
+      
+      // Replace the categories with our directly fetched ones
+      processedHomepage.featuredCategories.categories = allCategories;
+      
+      // Log the specific categories we found for debugging
+      console.log('Category names found:', allCategories.map((c:any) => c.title).join(', '));
     } else {
-      console.log('Homepage already has categories:', homepage?.featuredCategories?.categories?.length);
+      console.log('Homepage already has categories:', processedHomepage?.featuredCategories?.categories?.length);
     }
     
-    return homepage;
+    // Use the processed homepage data instead of the original
+    return processedHomepage;
   } catch (error) {
     console.error('Error fetching homepage data:', error);
     return null;
@@ -233,18 +251,30 @@ const fallbackData: HomepageData = {
 
 export default async function Home() {
   // Fetch data from Sanity
-  const data = await getHomepageData();
+  const homepageData = await getHomepageData();
+
+  // Debug logging
+  console.log('Using Sanity data:', !!homepageData);
+
+  // Extract specific sections or use fallback data if not available
+  const hero = homepageData?.hero || fallbackData.hero;
   
-  // Extract data from either Sanity or fallback with default values
-  const {
-    hero = fallbackData.hero,
-    featuredCategories = fallbackData.featuredCategories, 
-    featuredCollection = fallbackData.featuredCollection,
-    testimonials = fallbackData.testimonials,
-    newsletter = fallbackData.newsletter,
-    values = fallbackData.values
-  } = data || fallbackData;
+  // More detailed logging for categories
+  console.log('Raw featuredCategories from Sanity:', JSON.stringify(homepageData?.featuredCategories));
+  console.log('Raw categories from Sanity:', homepageData?.featuredCategories?.categories);
+  console.log('Categories length from Sanity:', homepageData?.featuredCategories?.categories?.length || 0);
   
+  const featuredCategories = homepageData?.featuredCategories || fallbackData.featuredCategories;
+  const featuredCollection = homepageData?.featuredCollection || fallbackData.featuredCollection;
+  const testimonials = homepageData?.testimonials || fallbackData.testimonials;
+  const newsletter = homepageData?.newsletter || fallbackData.newsletter;
+  const values = homepageData?.values || fallbackData.values;
+  
+  // Additional debug logging
+  console.log('Featured categories source:', featuredCategories === fallbackData.featuredCategories ? 'Fallback' : 'Sanity');
+  console.log('Are categories available?', !!featuredCategories?.categories && Array.isArray(featuredCategories.categories) && featuredCategories.categories.length > 0);
+  console.log('Featured collection source:', featuredCollection === fallbackData.featuredCollection ? 'Fallback' : 'Sanity');
+
   return (
     <ClientWrapper>
       <Script src="https://clooned.com/wp-content/uploads/cloons/scripts/clooned.js" strategy="afterInteractive" />
